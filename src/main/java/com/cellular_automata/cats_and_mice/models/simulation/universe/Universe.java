@@ -4,7 +4,9 @@ import com.cellular_automata.cats_and_mice.models.simulation.cat.Cat;
 import com.cellular_automata.cats_and_mice.models.simulation.mouse.Mouse;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -14,6 +16,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 @Setter
 public class Universe implements Runnable {
+    private String id;
+    private String name;
     private List<Cat> cats;
     private List<Mouse> mice;
     private int[] size;
@@ -22,6 +26,20 @@ public class Universe implements Runnable {
     private AtomicInteger modelsFinished;
     private boolean firstIteration;
     private Thread universeThread;
+
+    public Universe(String name, List<Cat> cats, List<Mouse> mice, int[] size){
+        this.id = UUID.randomUUID().toString();
+        this.name = name.isEmpty() ? this.id : name;
+        this.cats = new ArrayList<>(cats);
+        this.mice = new ArrayList<>(mice);
+        this.size = size;
+        this.time = 0;
+        this.startFlag.set(true);
+        this.modelsFinished.set(0);
+        this.firstIteration = true;
+        this.universeThread = new Thread(this, this.id);
+        this.universeThread.start();
+    }
 
     public void step() throws InterruptedException {
         int sumValue = cats.size() + mice.size();
@@ -49,8 +67,14 @@ public class Universe implements Runnable {
         while(modelsFinished.get() != sumValue){
             Thread.sleep(100);
         }
+        time++;
         firstIteration = false;
+        updateFrontEndState();
         step();
+    }
+
+    private void updateFrontEndState() {
+        // TODO: Use this to update the visuals on the front-end (this would be easier and more efficient compared to sending a request on each change)
     }
 
     void start() { universeThread.start(); }
