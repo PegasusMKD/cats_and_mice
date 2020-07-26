@@ -42,6 +42,7 @@ public class Cat extends Animal implements Runnable {
     }
 
     public void kill(){
+        universe.getCats().remove(this);
         stop = true;
     }
 
@@ -114,8 +115,7 @@ public class Cat extends Animal implements Runnable {
     private boolean checkForPreyOnCurrentPosition(List<Mouse> closePrey) {
         List<Mouse> mice = closePrey.stream().filter(mouse -> mouse.getPos()[0] == pos[0] && mouse.getPos()[1] == pos[1]).collect(Collectors.toList());
         if(!mice.isEmpty()){
-            eatingTimeToElapse = eatingTime;
-            // TODO: Remove those mice from the list in the universe
+            eatingTimeToElapse = eatingTime * mice.size();
             mice.forEach(Mouse::beingEaten);
             return true;
         }
@@ -236,19 +236,23 @@ public class Cat extends Animal implements Runnable {
             if(checkForPreyOnCurrentPosition(closePrey)) {
                 finish();
             }
+            checkAndResetBounds();
         }
     }
 
     private void moveRandom(List<Mouse> closePrey) throws InterruptedException {
         int distanceToMove = ThreadLocalRandom.current().nextInt(speed);
         int[][] possibilities = {{0,0}, {0, -distanceToMove}, {0, distanceToMove}, {-distanceToMove, 0}, {distanceToMove, 0},
-                {distanceToMove, distanceToMove}, {distanceToMove, -distanceToMove}, {-distanceToMove, distanceToMove}, {-distanceToMove, -distanceToMove}};
+                {distanceToMove, distanceToMove}, {distanceToMove, -distanceToMove}, {-distanceToMove, distanceToMove},
+                {-distanceToMove, -distanceToMove}};
+
         int[] chosen = possibilities[ThreadLocalRandom.current().nextInt(9)];
         pos[0] += chosen[0];
         pos[1] += chosen[1];
         if(checkForPreyOnCurrentPosition(closePrey)) {
             finish();
         }
+        checkAndResetBounds();
     }
 
     private void finish() throws InterruptedException {
@@ -263,7 +267,7 @@ public class Cat extends Animal implements Runnable {
             int[] mousePosition = mouse.getPos();
             if(Math.abs(pos[0] - mousePosition[0]) <= detectionDistance ||
             Math.abs(pos[1] - mousePosition[1]) <= detectionDistance ||
-            Math.abs(Point2D.distance(pos[0], pos[1], mousePosition[0], mousePosition[1])) <= detectionDistance){
+            Math.abs(Math.round(Point2D.distance(pos[0], pos[1], mousePosition[0], mousePosition[1]))) <= detectionDistance){
                 mouseList.add(mouse);
             }
         }

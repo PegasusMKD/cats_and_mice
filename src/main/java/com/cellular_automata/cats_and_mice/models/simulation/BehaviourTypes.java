@@ -5,5 +5,6 @@ public enum BehaviourTypes {
     NEUTRAL,
     GREEDY,
     DEFENSIVE,
-    AGGRESSIVE
+    AGGRESSIVE,
+    PESSIMISTIC
 }

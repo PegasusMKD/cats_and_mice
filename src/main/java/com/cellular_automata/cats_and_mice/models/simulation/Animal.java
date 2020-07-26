@@ -21,4 +21,13 @@ abstract public class Animal {
     protected AlgorithmType algorithm;
     protected BehaviourTypes behaviour;
 
+    protected void checkAndResetBounds() {
+        if(pos[0] > universe.getSize()[0]) {
+            pos[0] = universe.getSize()[0];
+        }
+        if(pos[1] > universe.getSize()[1]) {
+            pos[1] = universe.getSize()[1];
+        }
+    }
+
 }

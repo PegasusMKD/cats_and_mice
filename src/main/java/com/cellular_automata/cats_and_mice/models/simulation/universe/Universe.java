@@ -37,7 +37,11 @@ public class Universe implements Runnable {
         }
 
         for(Mouse mouse: mice){
-            mouse.step(this);
+            mouse.setWait(false);
+            if(firstIteration){
+                mouse.setUniverse(this);
+                mouse.start();
+            }
         }
 
         startFlag.set(false);
