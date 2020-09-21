@@ -1,0 +1,83 @@
+POST http://localhost:8080
+Content-Type: application/json
+
+{
+  "name": "test-universe",
+  "size": [
+    10,
+    10
+  ],
+  "cats": [
+    {
+      "detectionDistance": 3,
+      "type": "CAT",
+      "eatingTime": 10,
+      "pos": [
+        0,
+        0
+      ],
+      "speed": 4,
+      "algorithm": "GREEDY",
+      "behaviour": "PESSIMISTIC"
+    },
+    {
+      "detectionDistance": 2,
+      "type": "OLD_CAT",
+      "eatingTime": 5,
+      "speed": 2,
+      "pos": [
+        1,
+        1
+      ],
+      "algorithm": "GREEDY",
+      "behaviour": "PESSIMISTIC"
+    },
+    {
+      "detectionDistance": 2,
+      "type": "CAT",
+      "eatingTime": 3,
+      "pos": [
+        0,
+        1
+      ],
+      "speed": 3,
+      "algorithm": "GREEDY",
+      "behaviour": "PESSIMISTIC"
+    }
+  ],
+  "mice": [
+    {
+      "pos": [
+        4,
+        4
+      ],
+      "speed": 2,
+      "algorithm": "GREEDY",
+      "behaviour": "FRIENDLY",
+      "type": "MOUSE",
+      "afraidDistance": 3
+    },
+    {
+      "pos": [
+        3,
+        4
+      ],
+      "speed": 1,
+      "algorithm": "GREEDY",
+      "behaviour": "FRIENDLY",
+      "type": "OLD_MOUSE",
+      "afraidDistance": 3
+    },
+    {
+      "pos": [
+        4,
+        3
+      ],
+      "speed": 6,
+      "algorithm": "GREEDY",
+      "behaviour": "FRIENDLY",
+      "type": "MOUSE",
+      "afraidDistance": 3
+    }
+  ]
+}

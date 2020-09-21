@@ -5,12 +5,10 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Random;
-
 @Data
 @Getter
 @Setter
-abstract public class Animal {
+public abstract class Animal {
     protected String id;
     protected int[] pos;
     protected int speed;
@@ -22,11 +20,15 @@ abstract public class Animal {
     protected BehaviourTypes behaviour;
 
     protected void checkAndResetBounds() {
-        if(pos[0] > universe.getSize()[0]) {
+        if (pos[0] > universe.getSize()[0]) {
             pos[0] = universe.getSize()[0];
+        } else if (pos[0] < 0) {
+            pos[0] = 0;
         }
-        if(pos[1] > universe.getSize()[1]) {
+        if (pos[1] > universe.getSize()[1]) {
             pos[1] = universe.getSize()[1];
+        } else if (pos[1] < 0) {
+            pos[1] = 0;
         }
     }
 

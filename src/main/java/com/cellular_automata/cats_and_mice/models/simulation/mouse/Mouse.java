@@ -4,7 +4,7 @@ import com.cellular_automata.cats_and_mice.models.simulation.AlgorithmType;
 import com.cellular_automata.cats_and_mice.models.simulation.Animal;
 import com.cellular_automata.cats_and_mice.models.simulation.BehaviourTypes;
 import com.cellular_automata.cats_and_mice.models.simulation.cat.Cat;
-import lombok.SneakyThrows;
+import lombok.*;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -12,22 +12,26 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Data
+@Getter
+@Setter
+@EqualsAndHashCode(callSuper = true)
 public class Mouse extends Animal implements Runnable {
 
     private final MouseType type;
     private int afraidDistance;
     private List<Hole> knownSafeHoles;
     private int holeDetectionDistance;
-    private final List<int[]> possibleMovements = new ArrayList<int[]>();
+    private final List<int[]> possibleMovements = new ArrayList<>();
 
 
-    public Mouse(int[] pos, int speed, int afraidDistance, BehaviourTypes behaviour, MouseType type){
+    public Mouse(int[] pos, int speed, int afraidDistance, BehaviourTypes behaviour, MouseType type, AlgorithmType algorithm) {
         this.wait = true;
         this.stop = false;
         this.id = UUID.randomUUID().toString();
         this.pos = pos;
         this.afraidDistance = afraidDistance;
-        this.algorithm = AlgorithmType.RANDOM; // TODO: Add posibility to change this
+        this.algorithm = algorithm;
         this.speed = speed;
         this.type = type;
         this.behaviour = behaviour;
@@ -48,13 +52,16 @@ public class Mouse extends Animal implements Runnable {
     }
 
     private void debuffing() {
-        switch (type) {
-            case FAT_MOUSE:
-                this.speed -= 2;
-                break;
-            case OLD_MOUSE:
-                this.afraidDistance -= 1;
-                break;
+        if (type == MouseType.FAT_MOUSE) {
+            this.speed -= 2;
+            if (this.speed < 0) {
+                this.speed = 0;
+            }
+        } else if (type == MouseType.OLD_MOUSE) {
+            this.afraidDistance -= 1;
+            if (this.afraidDistance < 0) {
+                this.afraidDistance = 0;
+            }
         }
     }
 
@@ -70,42 +77,35 @@ public class Mouse extends Animal implements Runnable {
 
     public void step() throws InterruptedException {
         if(stop) {
+            universe.getModelsFinished().incrementAndGet();
             return;
         }
 
-        while(universe.getStartFlag().get() || wait){
+        while (universe.getStartFlag().get() || wait) {
             Thread.sleep(100);
         }
 
         List<Cat> predators = checkForPredators();
         move(predators);
-
         finish();
     }
 
     private void move(List<Cat> predators) {
-        switch (behaviour) {
-            case PESSIMISTIC:
-                if(!predators.isEmpty()) {
-                    break;
-                }
-            default:
-                decideDefaultMovement(predators);
+        if (behaviour == BehaviourTypes.PESSIMISTIC && !predators.isEmpty()) {
+            return;
         }
+        decideDefaultMovement(predators);
     }
 
     private void decideDefaultMovement(List<Cat> predators) {
-        switch (algorithm) {
-            case GREEDY:
-                if(predators.isEmpty()) {
-                    moveToHole();
-                } else {
-                    moveScared(predators);
-                }
-                break;
-            case RANDOM:
-                moveRandom();
-                break;
+        if (algorithm == AlgorithmType.GREEDY) {
+            if (predators.isEmpty()) {
+                moveToHole();
+            } else {
+                moveScared(predators);
+            }
+        } else if (algorithm == AlgorithmType.RANDOM) {
+            moveRandom();
         }
     }
 
@@ -126,7 +126,6 @@ public class Mouse extends Animal implements Runnable {
     }
 
 
-
     private void moveScared(List<Cat> predators){
         List<int[]> currentPossibleMoves = new ArrayList<>(possibleMovements);
         for(Cat cat: predators) {
@@ -142,10 +141,9 @@ public class Mouse extends Animal implements Runnable {
 
         double tmpDistance = Double.MIN_VALUE;
         int[] finalMove = new int[2];
-        for(int idx=0; idx<currentPossibleMoves.size(); idx++) {
-            int[] move = currentPossibleMoves.get(idx);
+        for (int[] move : currentPossibleMoves) {
             double mouseToPoint = Point2D.distance(pos[0], pos[1], move[0] + pos[0], move[1] + pos[1]);
-            if(tmpDistance < mouseToPoint){
+            if (tmpDistance < mouseToPoint) {
                 tmpDistance = mouseToPoint;
                 finalMove = move;
             }

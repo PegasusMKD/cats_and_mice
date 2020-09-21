@@ -10,7 +10,6 @@ import lombok.*;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -18,6 +17,7 @@ import java.util.stream.Collectors;
 @Data
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 public class Cat extends Animal implements Runnable {
 
     private int detectionDistance;
@@ -25,19 +25,23 @@ public class Cat extends Animal implements Runnable {
     private int eatingTime;
     private int eatingTimeToElapse;
 
-    public Cat(int[] pos, int detectionDistance, int speed, CatTypes type, BehaviourTypes behaviour){
+    public Cat(int[] pos, int detectionDistance, int speed, Integer eatingTime, CatTypes type, BehaviourTypes behaviour, AlgorithmType algorithm) {
         this.wait = true;
         this.stop = false;
         this.eatingTimeToElapse = 0;
         this.id = UUID.randomUUID().toString();
         this.pos = pos;
         this.detectionDistance = detectionDistance;
-        this.algorithm = AlgorithmType.RANDOM; // TODO: Add posibility to change this
+        this.algorithm = algorithm;
         this.speed = speed;
         this.type = type;
         this.behaviour = behaviour;
+        if (eatingTime == null) {
+            determineEatingTime();
+        } else {
+            this.eatingTime = eatingTime;
+        }
         debuffing();
-        determineEatingTime();
         this.currentThread = new Thread(this, this.id);
     }
 
@@ -58,15 +62,15 @@ public class Cat extends Animal implements Runnable {
 
     private void step() throws InterruptedException {
         // Thread and step control
-        if(stop) {
+        if (stop) {
+            universe.getModelsFinished().incrementAndGet();
             return;
         }
-
-        while(universe.getStartFlag().get() || wait){
+        while (universe.getStartFlag().get() || wait) {
             Thread.sleep(100);
         }
 
-        if(eatingTimeToElapse > 0) {
+        if (eatingTimeToElapse > 0) {
             eatingTimeToElapse--;
             finish();
         }
@@ -79,37 +83,36 @@ public class Cat extends Animal implements Runnable {
         finish();
     }
 
-    private void debuffing(){
-        switch (this.type) {
-            case FAT_CAT:
-                fatCatDebufs();
-                break;
-            case OLD_CAT:
-                oldCatDebufs();
-                break;
+    private void debuffing() {
+        if (this.type == CatTypes.FAT_CAT) {
+            fatCatDebufs();
+        } else if (this.type == CatTypes.OLD_CAT) {
+            oldCatDebufs();
         }
     }
 
     private void determineEatingTime() {
-        switch (type) {
-            case CAT:
-                eatingTime = 2;
-                break;
-            case FAT_CAT:
-                eatingTime = 1;
-                break;
-            case OLD_CAT:
-                eatingTime = 4;
-                break;
+        if (type == CatTypes.CAT) {
+            eatingTime = 2;
+        } else if (type == CatTypes.FAT_CAT) {
+            eatingTime = 1;
+        } else if (type == CatTypes.OLD_CAT) {
+            eatingTime = 4;
         }
     }
 
     private void fatCatDebufs() {
         this.speed -= 2;
+        if (this.speed < 0) {
+            this.speed = 0;
+        }
     }
 
-    private void oldCatDebufs(){
+    private void oldCatDebufs() {
         this.detectionDistance -= 1;
+        if (this.detectionDistance < 0) {
+            this.detectionDistance = 0;
+        }
     }
 
     private boolean checkForPreyOnCurrentPosition(List<Mouse> closePrey) {
@@ -123,17 +126,14 @@ public class Cat extends Animal implements Runnable {
     }
 
     private void move(List<Mouse> closePrey) throws InterruptedException {
-        switch(algorithm){
-            case RANDOM:
+        if (algorithm == AlgorithmType.RANDOM) {
+            moveRandom(closePrey);
+        } else if (algorithm == AlgorithmType.GREEDY) {
+            if (closePrey.isEmpty()) {
                 moveRandom(closePrey);
-                break;
-            case GREEDY:
-                if(closePrey.isEmpty()){
-                    moveRandom(closePrey);
-                } else {
-                    reworkedSemiOptimalGreedyMovement(closePrey);
-                }
-                break;
+            } else {
+                reworkedSemiOptimalGreedyMovement(closePrey);
+            }
         }
     }
 
@@ -148,7 +148,7 @@ public class Cat extends Animal implements Runnable {
      *  </ul>
      * </p>
      * @deprecated
-     * @param closePrey
+     * @param closePrey mice which are close
      */
     @Deprecated
     private void moveGreedy(List<Mouse> closePrey) {
@@ -205,7 +205,7 @@ public class Cat extends Animal implements Runnable {
      *         </ul>
      *     </ol>
      * </p>
-     * @param closePrey
+     * @param closePrey mice which are close
      */
     private void reworkedSemiOptimalGreedyMovement(List<Mouse> closePrey) throws InterruptedException {
         List<Double> distances = new ArrayList<>();
@@ -213,17 +213,17 @@ public class Cat extends Animal implements Runnable {
         int idx = Utils.getIdxOfSmallestDistance(distances);
         Mouse closestMouse = closePrey.get(idx);
         int availableMovements = speed;
-        while(availableMovements != 0){
-            int xDistance = pos[0] - closestMouse.getPos()[0];
-            int yDistance = pos[1] - closestMouse.getPos()[1];
-            if(xDistance == 0) {
-                if(Math.abs(yDistance) < availableMovements){
+        while (availableMovements != 0) {
+            int xDistance = closestMouse.getPos()[0] - pos[0];
+            int yDistance = closestMouse.getPos()[1] - pos[1];
+            if (xDistance == 0) {
+                if (Math.abs(yDistance) < availableMovements) {
                     availableMovements = Math.abs(yDistance);
                 }
                 pos[1] += availableMovements * (yDistance < 0 ? -1 : 1);
                 availableMovements = 0;
-            } else if(yDistance == 0){
-                if(Math.abs(xDistance) < availableMovements){
+            } else if (yDistance == 0) {
+                if (Math.abs(xDistance) < availableMovements) {
                     availableMovements = Math.abs(xDistance);
                 }
                 pos[0] += availableMovements * (xDistance < 0 ? -1 : 1);
@@ -233,7 +233,7 @@ public class Cat extends Animal implements Runnable {
                 pos[1] += yDistance < 0 ? -1 : 1;
                 availableMovements--;
             }
-            if(checkForPreyOnCurrentPosition(closePrey)) {
+            if (checkForPreyOnCurrentPosition(closePrey)) {
                 finish();
             }
             checkAndResetBounds();
